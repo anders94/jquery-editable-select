@@ -13,6 +13,7 @@
 		this.options = options;
 		this.$select = $(select);
 		this.$input  = $('<input type="text" autocomplete="off">');
+		this.$hidden = $('<input type="hidden">');
 		this.$list   = $('<ul class="es-list">');
 		this.utility = new EditableSelectUtility(this);
 		
@@ -28,9 +29,10 @@
 				this.$input.bind(event.type + "." + event.namespace, event.handler);
 			});
 		}
+		this.$select.parent().prepend(this.$hidden);
 		this.$select.replaceWith(this.$input);
 		this.$list.appendTo(this.options.appendTo || this.$input.parent());
-		
+
 		// initalization
 		this.utility.initialize();
 		this.utility.initializeList();
@@ -67,7 +69,7 @@
 	EditableSelect.prototype.hide = function () {
 		var fns = { default: 'hide', fade: 'fadeOut', slide: 'slideUp' };
 		var fn  = fns[this.options.effects];
-		
+
 		this.utility.trigger('hide');
 		this.$input.removeClass('open');
 		this.$list[fn](this.options.duration, $.proxy(this.utility.trigger, this.utility, 'hidden'));
@@ -75,6 +77,7 @@
 	EditableSelect.prototype.select = function ($li) {
 		if (!this.$list.has($li) || !$li.is('li.es-visible:not([disabled])')) return;
 		this.$input.val($li.text());
+		this.$hidden.val($li.attr('value') ? $li.attr('value') : $li.text());
 		if (this.options.filter) this.hide();
 		this.filter();
 		this.utility.trigger('select', $li);
@@ -115,17 +118,35 @@
 		this.$list.off('mousemove mousedown mouseup');
 		this.$input.off('focus blur input keydown');
 		this.$input.replaceWith(this.$select);
+		this.$hidden.remove();
 		this.$list.remove();
 		this.$select.removeData('editable-select');
 	};
-	
+
 	// Utility
 	EditableSelectUtility = function (es) {
 		this.es = es;
 	}
 	EditableSelectUtility.prototype.initialize = function () {
 		var that = this;
-		that.setAttributes(that.es.$input, that.es.$select[0].attributes, that.es.$select.data());
+
+		$.each(that.es.$select[0].attributes || {}, function (i, attr) {
+			if (attr.name == 'name')
+			  that.es.$hidden.attr(attr.name, attr.value);
+			else
+			  that.es.$input.attr(attr.name, attr.value);
+		});
+		that.es.$input.data(that.es.$select.data());
+		that.es.$input.on('change', () => {
+			let found = false;
+			$.each(that.es.$select[0] || {}, function (i, attr) {
+				if (attr.value != '' && that.es.$hidden.val() == attr.value)
+				  found = true;
+			});
+			if (!found)
+				that.es.$hidden.val(that.es.$input.val());
+		});
+
 		that.es.$input.addClass('es-input').data('editable-select', that.es);
 		that.es.$select.find('option').each(function (i, option) {
 			var $option = $(option).remove();
@@ -231,7 +252,7 @@
 		this.es.$select.trigger.apply(this.es.$select, args);
 		this.es.$input.trigger.apply(this.es.$input, args);
 	};
-	
+
 	// Plugin
 	Plugin = function (option) {
 		var args = Array.prototype.slice.call(arguments, 1);
@@ -246,5 +267,5 @@
 	}
 	$.fn.editableSelect             = Plugin;
 	$.fn.editableSelect.Constructor = EditableSelect;
-	
+
 })(jQuery);
