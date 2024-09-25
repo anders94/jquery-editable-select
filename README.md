@@ -13,6 +13,11 @@ It scales down to a real select list when javascript is not available.
     </a>
 </p>
 
+This forked version of `jquery-editable-select` returns the option's value if it exists. If not, it follows the previously
+default behavior of returning the text of the option. Additionally, if what was typed does not match a select option, the
+typed text is returned instead. This works somewhat similar to Excel where a cell attempts to assist by showing you completion
+options but still allows you to enter whatever you want instead.
+
 # Demo
 
 See demos here: http://indrimuska.github.io/jquery-editable-select/
